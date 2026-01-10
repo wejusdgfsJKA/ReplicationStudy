@@ -14,3 +14,40 @@ NEST_DEBRIS_BOUNDARY = 30
 AGENT_SPEED = 2
 GENOME_SIZE = 10
 GENOME_EXCHANGE_RADIUS = 5
+
+ALL_BEHAVIOR_NODES = {
+    # postconditions
+    "NeighbourObjects_Food",
+    "NeighbourObjects_Debris",
+    "NeighbourObjects_Site",
+    "NeighbourObjects_Hub",
+    "IsCarrying_Food",
+    "IsCarrying_Debris",
+    "DidAvoided_Site",
+    "DidAvoided_Hub",
+    "IsVisitedBefore_Site",
+    "IsVisitedBefore_Hub",
+    "DummyNode",
+    # preconditions
+    "IsDropable_Site",
+    "IsDropable_Hub",
+    "NeighbourObjects_Food_invert",
+    "NeighbourObjects_Debris_invert",
+    "NeighbourObjects_Site_invert",
+    "NeighbourObjects_Hub_invert",
+    "IsVisitedBefore_Site_invert",
+    "IsVisitedBefore_Hub_invert",
+    "IsCarrying_Food_invert",
+    "IsCarrying_Debris_invert",
+    # actions
+    "CompositeSingleCarry_Food",
+    "CompositeSingleCarry_Debris",
+    "CompositeDrop_Food",
+    "CompositeDrop_Debris",
+    "Explore",
+    "MoveTowards_Hub",
+    "MoveTowards_Site",
+    "MoveAway_Hub",
+    "MoveAway_Site"
+}
+TOTAL_BEHAVIOURS = len(ALL_BEHAVIOR_NODES)

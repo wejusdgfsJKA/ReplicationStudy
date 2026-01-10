@@ -2,12 +2,24 @@ import math
 import random
 
 import numpy as np
-import py_trees
 from mesa import Agent
 
-from src.betr_geese.config import *
-from src.environment.objects import *
-from src.environment.utils import *
+from src.environment.genotype_to_phenotype import *
+
+
+class Genome:
+    def __init__(self, genome, agent, bt):
+        self.genome = genome
+        self._agent = agent
+        self.bt = build_bt_from_genome_grammar(agent, genome)
+        self.fitness = calculate_fitness(self)
+
+    def rebuild_bt(self):
+        self.bt = build_bt_from_genome_grammar(self._agent, self.genome)
+        self.fitness = calculate_fitness(self)
+
+    def get_fitness(self):
+        return self.fitness
 
 
 class SwarmAgent(Agent):
@@ -22,7 +34,10 @@ class SwarmAgent(Agent):
         self.blackboard.hub = model.hub
         self.blackboard.site = model.sites[0]
 
-        self.genome = [random.randint(0, 50) for _ in range(GENOME_SIZE)]
+        bla = [random.randint(0, 50) for _ in range(GENOME_SIZE)]
+        bt = build_bt_from_genome_grammar(self, bla)
+        self.genome = Genome(bla, self, bt)
+        self.genome.fitness = calculate_fitness(self.genome)
         self.genome_storage_pool = [self.genome]
 
     def _init_blackboard(self):
@@ -73,9 +88,8 @@ class SwarmAgent(Agent):
         if not neighbors:
             return
 
-        genome_copy = self.genome.copy()
         for neighbor in neighbors:
-            neighbor.exchange_genome(genome_copy)
+            neighbor.exchange_genome(Genome(self.genome.genome, neighbor, self.genome.bt))
 
     def exchange_genome(self, new_genome):
         self.genome_storage_pool.append(new_genome)
@@ -90,6 +104,8 @@ class SwarmAgent(Agent):
 
         # tick the BT
         self._update_visited()
+        self.genome.bt.tick()
+        self._update_visited()
 
         if self.carrying:
             self.carrying.pos = self.pos.copy()
@@ -99,35 +115,35 @@ class SwarmAgent(Agent):
             parents = self._perform_selection()
             children = self._perform_crossover(parents)
             self._perform_mutation(children)
+            for child in children:
+                child.rebuild_bt()
+                child.fitness = calculate_fitness(child)
             self.genome_storage_pool = self._select_children(children)
 
     # region Evolution
-    def calculate_fitness(self, genome):
-        return 0
 
     def _perform_selection(self):
-        parents = [(g, self.calculate_fitness(g)) for g in self.genome_storage_pool[:]]
-        parents.sort(key=lambda x: x[1], reverse=True)
-        selected = parents[:TRUNCATION_SIZE]
-        return selected
+        self.genome_storage_pool.sort(key=lambda x: x.get_fitness(), reverse=True)
+        return self.genome_storage_pool[:TRUNCATION_SIZE]
 
     def _perform_crossover(self, genomes):
         children = []
-        for i in range(0, len(self.genome_storage_pool) - 1, 2):
+        for i in range(0, len(genomes) - 1, 2):
             if random.random() > CROSSOVER_PROB:
                 continue
-            parent1 = self.genome_storage_pool[i]
-            parent2 = self.genome_storage_pool[i + 1]
+            parent1 = self.genome_storage_pool[i].genome
+            parent2 = self.genome_storage_pool[i + 1].genome
             crossover_point = random.randint(0, len(parent1) - 1)
             child1 = parent1[:crossover_point] + parent2[crossover_point:]
             child2 = parent2[:crossover_point] + parent1[crossover_point:]
-            children.append(child1)
-            children.append(child2)
+            children.append(Genome(child1, self, build_bt_from_genome_grammar(self, child1)))
+            children.append(Genome(child2, self, build_bt_from_genome_grammar(self, child2)))
         return children
 
     def _perform_mutation(self, genomes, mutation_prob=0.01, codon_bits=8):
         for genome in genomes:
-            for i, codon in enumerate(genome):
+            buffer = genome.genome
+            for i, codon in enumerate(buffer):
                 if random.random() < mutation_prob:
                     # choose which bit to flip
                     bit_to_flip = random.randint(0, codon_bits - 1)
@@ -135,29 +151,27 @@ class SwarmAgent(Agent):
                     # flip the bit
                     codon ^= (1 << bit_to_flip)
 
-                    # clamp to valid range (optional but safe)
+                    # clamp to valid range
                     max_value = (1 << codon_bits) - 1
                     codon = codon & max_value
 
                     # write back to genome
-                    genome[i] = codon
+                    buffer[i] = codon
+                    # why goddamn bit flipping, why
+            genome.genome = buffer
 
     def _select_children(self, genomes):
-        genomes.sort(key=lambda x: self.compute_diversity(x), reverse=True)
+        genomes.sort(key=lambda x: compute_diversity(x), reverse=True)
         return genomes[:STORAGE_THRESHOLD]
-
-    def compute_diversity(self, genome):
-        return 0
 
     # endregion
 
     def update(self):
-        self_fitness = self.calculate_fitness(self.genome)
+        self_fitness = calculate_fitness(self.genome)
         for genome in self.genome_storage_pool:
-            fitness = self.calculate_fitness(genome)
+            fitness = calculate_fitness(genome)
             if self_fitness < fitness:
                 self.genome = genome
-                self_fitness = fitness
 
     # region BT
     def pickup(self, obj):
@@ -185,7 +199,10 @@ class SwarmAgent(Agent):
 
     def explore(self):
         radians = random.uniform(0, 2 * math.pi)
-        self.pos += (AGENT_SPEED * np.array([math.cos(radians), math.sin(radians)]))
+        pos_delta = (AGENT_SPEED * np.array([math.cos(radians), math.sin(radians)]))
+        # self.pos[0] += pos_delta[0]
+        # self.pos[1] += pos_delta[1]
+        self.pos += pos_delta
         np.clip(self.pos, -100, 100)
         # paranoia
         assert -100 <= self.pos[0] < 100
@@ -207,10 +224,10 @@ class SwarmAgent(Agent):
     def move_away(self, obj_type):
         if obj_type == SObjects.Hub:
             selected_pos = self.model.hub.pos.copy()
-            self.blackboard.avoid_last_step_hub = True
+            self.blackboard.avoided_last_step_hub = True
         else:
             selected_pos = self.model.sites[0].pos.copy()
-            self.blackboard.avoid_last_step_site = True
+            self.blackboard.avoided_last_step_site = True
         direction = self.pos - selected_pos
         norm_direction = (direction - np.min(direction)) / (np.max(direction) - np.min(direction))
         self.pos += (norm_direction * AGENT_SPEED)

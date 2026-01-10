@@ -16,7 +16,7 @@ class SwarmModel(mesa.Model):
         self.world_size = world_size
         self.time = 0
 
-        self.hub = Hub(pos=np.array([0, 0]), radius=10)
+        self.hub = Hub(pos=np.array([0, 0], dtype='float64'), radius=10)
         self._init_sites(n_sites)
 
         self._init_food(n_food)

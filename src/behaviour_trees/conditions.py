@@ -91,3 +91,12 @@ class VisitedBefore(py_trees.behaviour.Behaviour):
         if self.obj_type == SObjects.Site and self.agent.blackboard.visited_site:
             return py_trees.common.Status.SUCCESS
         return py_trees.common.Status.FAILURE
+
+
+# idk boss
+class CanMove(py_trees.behaviour.Behaviour):
+    def __init__(self):
+        super().__init__("CanMove")
+
+    def update(self):
+        return py_trees.common.Status.SUCCESS
