@@ -1,9 +1,25 @@
-from environment.genotype_to_phenotype import *
+from config import *
 from environment.model import SwarmModel
 
 if __name__ == '__main__':
-    model = SwarmModel(n_agents=N_AGENTS)
-    for _ in range(120):
-        model.step()
-    with open("results.txt", "a") as f:
-        f.write(f"Debris removed:{model.debris_removed_fraction()}\nFood gathered:{model.food_at_hub_fraction()}")
+    trial_count = 1
+    for trial in range(trial_count):
+        model = SwarmModel(n_agents=N_AGENTS)
+        for _ in range(STEPS // 10):
+            model.step()
+
+        with open("results.txt", "a") as f:
+            f.write(
+                f"Learning:\nMaintenance:{model.debris_removed_fraction()}\nForaging:{model.food_at_hub_fraction()}")
+
+        best_genome = None
+        for agent in model.agents:
+            if best_genome is None or best_genome.fitness < agent.genome.fitness:
+                best_genome = agent.genome
+
+        model = SwarmModel(n_agents=N_AGENTS, template_genome=best_genome)
+        for _ in range(STEPS):
+            model.step()
+        with open("results.txt", "a") as f:
+            f.write(
+                f"\nTesting:\nMaintenance:{model.debris_removed_fraction()}\nForaging:{model.food_at_hub_fraction()}\n\n")

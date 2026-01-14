@@ -11,7 +11,8 @@ from src.environment.utils import *
 
 class SwarmModel(mesa.Model):
     # region Setup
-    def __init__(self, n_agents=100, world_size=100, n_sites=1, n_food=100, n_debris=100, seed=None):
+    def __init__(self, n_agents=100, world_size=100, n_sites=1, n_food=100, n_debris=100, template_genome=None,
+                 seed=None):
         super().__init__(seed=seed)
         self.world_size = world_size
         self.time = 0
@@ -22,7 +23,10 @@ class SwarmModel(mesa.Model):
         self._init_food(n_food)
         self._init_debris(n_debris)
 
-        SwarmAgent.create_agents(self, n_agents)
+        if template_genome is None:
+            SwarmAgent.create_agents(self, n_agents)
+        else:
+            SwarmAgent.from_genome(self, template_genome, n_agents)
 
     def _init_sites(self, n):
         self.sites = []

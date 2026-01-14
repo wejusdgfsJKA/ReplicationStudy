@@ -23,22 +23,29 @@ class Genome:
 
 
 class SwarmAgent(Agent):
-    def __init__(self, model):
-        super().__init__(model)
 
+    def __init__(self, model, genome=None):
+        super().__init__(model)
+        self._should_evolve = genome is None
         self._init_blackboard()
 
-        self.model = model
         self.carrying = None
         self.pos = model.hub.pos.copy()
         self.blackboard.hub = model.hub
         self.blackboard.site = model.sites[0]
 
-        bla = [random.randint(0, 50) for _ in range(GENOME_SIZE)]
-        bt = build_bt_from_genome_grammar(self, bla)
-        self.genome = Genome(bla, self, bt)
-        self.genome.fitness = calculate_fitness(self.genome)
-        self.genome_storage_pool = [self.genome]
+        if self._should_evolve:
+            bla = [random.randint(0, 50) for _ in range(GENOME_SIZE)]
+            bt = build_bt_from_genome_grammar(self, bla)
+            self.genome = Genome(bla, self, bt)
+            self.genome.fitness = calculate_fitness(self.genome)
+            self.genome_storage_pool = [self.genome]
+        else:
+            self.genome = Genome(genome.genome[:], self, build_bt_from_genome_grammar(self, genome.genome))
+
+    @classmethod
+    def from_genome(cls, model, genome, n):
+        return [cls(model, genome) for _ in range(n)]
 
     def _init_blackboard(self):
         self.blackboard = py_trees.blackboard.Client(name="Agent")
@@ -74,7 +81,8 @@ class SwarmAgent(Agent):
     def sense(self):
         # exchange genome info
         self.find_closest_objects()
-        self.share_genome()
+        if self._should_evolve:
+            self.share_genome()
 
     def share_genome(self):
         if random.random() > INTERACTION_PROB:
@@ -89,7 +97,7 @@ class SwarmAgent(Agent):
             return
 
         for neighbor in neighbors:
-            neighbor.exchange_genome(Genome(self.genome.genome, neighbor, self.genome.bt))
+            neighbor.exchange_genome(Genome(self.genome.genome[:], neighbor, self.genome.bt))
 
     def exchange_genome(self, new_genome):
         self.genome_storage_pool.append(new_genome)
@@ -110,7 +118,7 @@ class SwarmAgent(Agent):
         if self.carrying:
             self.carrying.pos = self.pos.copy()
 
-        if len(self.genome_storage_pool) > STORAGE_THRESHOLD:
+        if self._should_evolve and len(self.genome_storage_pool) > STORAGE_THRESHOLD:
             # perform genetic operations
             parents = self._perform_selection()
             children = self._perform_crossover(parents)
@@ -167,11 +175,18 @@ class SwarmAgent(Agent):
     # endregion
 
     def update(self):
-        self_fitness = calculate_fitness(self.genome)
-        for genome in self.genome_storage_pool:
-            fitness = calculate_fitness(genome)
-            if self_fitness < fitness:
-                self.genome = genome
+        if self._should_evolve:
+            self_fitness = calculate_fitness(self.genome)
+            best_genome = None
+            best_fitness = None
+            for genome in self.genome_storage_pool:
+                fitness = calculate_fitness(genome)
+                if best_fitness is None or fitness < best_fitness:
+                    best_genome = genome
+                    best_fitness = fitness
+            if best_genome is not None and self_fitness < best_fitness:
+                self.genome = Genome(best_genome.genome[:], self,
+                                     build_bt_from_genome_grammar(self, best_genome.genome))
 
     # region BT
     def pickup(self, obj):
@@ -204,9 +219,6 @@ class SwarmAgent(Agent):
         # self.pos[1] += pos_delta[1]
         self.pos += pos_delta
         np.clip(self.pos, -100, 100)
-        # paranoia
-        assert -100 <= self.pos[0] < 100
-        assert -100 <= self.pos[1] < 100
 
     def move_towards(self, obj_type):
         if obj_type == SObjects.Hub:
