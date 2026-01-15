@@ -8,9 +8,7 @@ if __name__ == '__main__':
         for _ in range(STEPS):
             model.step()
 
-        with open("results.txt", "a") as f:
-            f.write(
-                f"Learning:\nMaintenance:{model.debris_removed_fraction()}\nForaging:{model.food_at_hub_fraction()}")
+        print(f"Learning:\nMaintenance:{model.debris_removed_fraction()}\nForaging:{model.food_at_hub_fraction()}")
 
         best_genome = None
         for agent in model.agents:
@@ -20,6 +18,5 @@ if __name__ == '__main__':
         model = SwarmModel(n_agents=N_AGENTS, template_genome=best_genome)
         for _ in range(STEPS):
             model.step()
-        with open("results.txt", "a") as f:
-            f.write(
-                f"\nTesting:\nMaintenance:{model.debris_removed_fraction()}\nForaging:{model.food_at_hub_fraction()}\n\n")
+
+        print(f"\nTesting:\nMaintenance:{model.debris_removed_fraction()}\nForaging:{model.food_at_hub_fraction()}\n\n")

@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="Python 3.13 (PyCharmMiscProject)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Remote 3.12 Docker (sha256:8956a4618d2fd21461bc0c397d6889ed22d34caad01bd979329deb87b38073b3)" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.13 (ReplicationStudy)" project-jdk-type="Python SDK" />
 </project>
