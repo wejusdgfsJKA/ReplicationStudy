@@ -4,9 +4,9 @@ import random
 import mesa
 import numpy as np
 
-from src.environment.agent import SwarmAgent
-from src.environment.objects import *
-from src.environment.utils import *
+from environment.objects import *
+from environment.swarm_agent import SwarmAgent
+from environment.utils import *
 
 
 class SwarmModel(mesa.Model):

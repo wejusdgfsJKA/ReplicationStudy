@@ -1,5 +1,5 @@
-from src.behaviour_trees.primitives import *
-from src.betr_geese.config import *
+from behaviour_trees.primitives import *
+from betr_geese.config import *
 
 GRAMMAR = {
     "root": ["sequence", "selector"],

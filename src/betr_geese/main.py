@@ -1,11 +1,11 @@
 from config import *
-from environment.model import SwarmModel
+from environment.swarm_model import SwarmModel
 
 if __name__ == '__main__':
-    trial_count = 1
+    trial_count = 10
     for trial in range(trial_count):
         model = SwarmModel(n_agents=N_AGENTS)
-        for _ in range(STEPS // 10):
+        for _ in range(STEPS):
             model.step()
 
         with open("results.txt", "a") as f:

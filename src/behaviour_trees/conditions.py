@@ -1,7 +1,7 @@
 import py_trees
 
 from environment.objects import Food, Debris
-from src.environment.utils import *
+from environment.utils import *
 
 
 class IsCarrying(py_trees.behaviour.Behaviour):

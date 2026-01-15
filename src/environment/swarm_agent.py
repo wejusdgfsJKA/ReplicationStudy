@@ -4,7 +4,7 @@ import random
 import numpy as np
 from mesa import Agent
 
-from src.environment.genotype_to_phenotype import *
+from environment.genotype_to_phenotype import *
 
 
 class Genome:
@@ -42,6 +42,10 @@ class SwarmAgent(Agent):
             self.genome_storage_pool = [self.genome]
         else:
             self.genome = Genome(genome.genome[:], self, build_bt_from_genome_grammar(self, genome.genome))
+
+    @staticmethod
+    def create_agents(model, n):
+        return [SwarmAgent(model) for _ in range(n)]
 
     @classmethod
     def from_genome(cls, model, genome, n):
@@ -97,7 +101,8 @@ class SwarmAgent(Agent):
             return
 
         for neighbor in neighbors:
-            neighbor.exchange_genome(Genome(self.genome.genome[:], neighbor, self.genome.bt))
+            if isinstance(neighbor, SwarmAgent):
+                neighbor.exchange_genome(Genome(self.genome.genome[:], neighbor, self.genome.bt))
 
     def exchange_genome(self, new_genome):
         self.genome_storage_pool.append(new_genome)
